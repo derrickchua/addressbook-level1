@@ -115,6 +115,11 @@ public class AddressBook {
     private static final String COMMAND_LIST_DESC = "Displays all persons as a list with index numbers.";
     private static final String COMMAND_LIST_EXAMPLE = COMMAND_LIST_WORD;
 
+    private static final String COMMAND_EDIT_WORD = "edit";
+    private static final String COMMAND_EDIT_DESC = "Edits an existing entry";
+    private static final String COMMAND_EDIT_EXAMPLE = COMMAND_EDIT_WORD + "1 John Doe p/98765432 e/johnd@gmail.com";
+    private static final String COMMAND_EDIT_PARAMETERS = "NAME"
+
     private static final String COMMAND_DELETE_WORD = "delete";
     private static final String COMMAND_DELETE_DESC = "Deletes a person identified by the index number used in "
                                                     + "the last find/list call.";
@@ -375,6 +380,8 @@ public class AddressBook {
             return executeFindPersons(commandArgs);
         case COMMAND_LIST_WORD:
             return executeListAllPersonsInAddressBook();
+        case COMMAND_EDIT_WORD:
+            return executeEditPerson(commandArgs);
         case COMMAND_DELETE_WORD:
             return executeDeletePerson(commandArgs);
         case COMMAND_CLEAR_WORD:
@@ -491,6 +498,58 @@ public class AddressBook {
             }
         }
         return matchedPersons;
+    }
+
+    /**
+     * Deletes person identified using last displayed index.
+     *
+     * @param commandArgs full command args string from the user
+     * @return feedback display message for the operation result
+     */
+    private static String executeEditPerson(String commandArgs) {
+        String split[] = splitCommandWordAndArgs(commandArgs);
+
+        if (split.length != 2){
+            return getMessageForInvalidCommandInput(COMMAND_EDIT_WORD, getUsageInfoForEditCommand())
+        }
+
+        // try decoding a person from the raw args
+        final Optional<String[]> decodeResult = decodePersonFromString(split[1]);
+
+        // checks if args are valid (decode result will not be present if the person is invalid)
+        if (!decodeResult.isPresent()) {
+            return getMessageForInvalidCommandInput(COMMAND_ADD_WORD, getUsageInfoForAddCommand());
+        }
+
+        // add the person as specified
+        final String[] personToAdd = decodeResult.get();
+        addPersonToAddressBook(personToAdd);
+
+        if (!isEditPersonArgsValid(commandArgs)) {
+            return getMessageForInvalidCommandInput(COMMAND_DELETE_WORD, getUsageInfoForDeleteCommand());
+        }
+        final int targetVisibleIndex = extractTargetIndexFromDeletePersonArgs(commandArgs);
+        if (!isDisplayIndexValidForLastPersonListingView(targetVisibleIndex)) {
+            return MESSAGE_INVALID_PERSON_DISPLAYED_INDEX;
+        }
+        final String[] targetInModel = getPersonByLastVisibleIndex(targetVisibleIndex);
+        return deletePersonFromAddressBook(targetInModel) ? getMessageForSuccessfulDelete(targetInModel) // success
+                : MESSAGE_PERSON_NOT_IN_ADDRESSBOOK; // not found
+    }
+
+    /**
+     * Checks validity of edit person argument string's format.
+     *
+     * @param rawArgs raw command args string for the delete person command
+     * @return whether the input args string is valid
+     */
+    private static boolean isEditPersonArgsValid(String rawArgs) {
+        try {
+            final int extractedIndex = Integer.parseInt(rawArgs.trim()); // use standard libraries to parse
+            return extractedIndex >= DISPLAYED_INDEX_OFFSET;
+        } catch (NumberFormatException nfe) {
+            return false;
+        }
     }
 
     /**
@@ -1096,6 +1155,13 @@ public class AddressBook {
         return String.format(MESSAGE_COMMAND_HELP, COMMAND_ADD_WORD, COMMAND_ADD_DESC) + LS
                 + String.format(MESSAGE_COMMAND_HELP_PARAMETERS, COMMAND_ADD_PARAMETERS) + LS
                 + String.format(MESSAGE_COMMAND_HELP_EXAMPLE, COMMAND_ADD_EXAMPLE) + LS;
+    }
+
+    /** Returns the string for showing 'edit' command usage instruction */
+    private static String getUsageInfoForEditCommand() {
+        return String.format(MESSAGE_COMMAND_HELP, COMMAND_EDIT_WORD, COMMAND_EDIT_DESC) + LS
+                + String.format(MESSAGE_COMMAND_HELP_PARAMETERS, COMMAND_EDIT_PARAMETERS) + LS
+                + String.format(MESSAGE_COMMAND_HELP_EXAMPLE, COMMAND_EDIT_EXAMPLE) + LS;
     }
 
     /** Returns the string for showing 'find' command usage instruction */
