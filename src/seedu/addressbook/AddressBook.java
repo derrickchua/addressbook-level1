@@ -518,29 +518,28 @@ public class AddressBook {
         String index = split[0];
         String personArgs = split[1];
         final int targetVisibleIndex = extractTargetIndexFromDeletePersonArgs(split[0]);
+
         if (!isDisplayIndexValidForLastPersonListingView(targetVisibleIndex)) {
             return MESSAGE_INVALID_PERSON_DISPLAYED_INDEX;
         }
-//final String[] targetInModel = getPersonByLastVisibleIndex(targetVisibleIndex);
-//        return deletePersonFromAddressBook(targetInModel) ? getMessageForSuccessfulDelete(targetInModel) // success
-//                : MESSAGE_PERSON_NOT_IN_ADDRESSBOOK; // not found
 
-
+        if (!isEditPersonArgsValid(index)) {
+            return getMessageForInvalidCommandInput(COMMAND_EDIT_WORD, getUsageInfoForEditCommand());
+        }
 
         // try decoding a person from the raw args
         final Optional<String[]> decodeResult = decodePersonFromString(personArgs);
 
+        // checks if args are valid (decode result will not be present if the person is invalid)
+        if (!decodeResult.isPresent()) {
+            return getMessageForInvalidCommandInput(COMMAND_EDIT_WORD, getUsageInfoForEditCommand());
+        }
+
         // add the person as specified
         final String[] personToEdit = decodeResult.get();
 
-        // checks if args are valid (decode result will not be present if the person is invalid)
-        if (!decodeResult.isPresent()) {
-            return getMessageForInvalidCommandInput(COMMAND_EDIT_WORD, getUsageInfoForAddCommand());
-        }
 
-        if (!isEditPersonArgsValid(split[0])) {
-            return getMessageForInvalidCommandInput(COMMAND_EDIT_WORD, getUsageInfoForDeleteCommand());
-        }
+
         return editExistingPerson(targetVisibleIndex, personToEdit)
                 ? getMessageForSuccessfulEditPerson(targetVisibleIndex, personToEdit)
                 : MESSAGE_ERROR_EDITING_EXISTING;
